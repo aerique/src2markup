@@ -1,0 +1,200 @@
+#!/usr/bin/clisp -ansi -norc
+;;;;- -*- Mode: LISP; Syntax: COMMON-LISP -*-
+;;;;-
+;;;; # src2md
+;;;;
+;;;;  author: Erik Winkels (<aerique@xs4all.nl>)  
+;;;; created: 2010-03-17  
+;;;; version: 0.4 (2010-03-19)  
+;;;; license: BSD, see the end of this file
+;;;;
+;;;; ## Introduction
+;;;;
+;;;; `src2md` converts a source code file to a file parsable by
+;;;; [Markdown](http://daringfireball.net/projects/markdown/).  This document
+;;;; is an example of a source code file converted by `src2md`.
+;;;;
+;;;; I have used [pbook.el](http://discontinuity.info/~pkhuong/pbook.el) in the
+;;;; past and really like that approach to documenting code but it offered
+;;;; too few options to markup the comments.  I could ofcourse have helped
+;;;; improve pbook but this current approach is a hack that I had to get out of
+;;;; my system (also known as the
+;;;; [NIH](http://en.wikipedia.org/wiki/Not_Invented_Here) syndrome).
+;;;;
+;;;; Also, `src2md` doesn't depend on Emacs which can be a good thing for some
+;;;; people (not me).
+;;;;
+;;;; ## Download
+;;;;
+;;;; <http://www.aerique.net/software/src2md/src2md.txt>
+;;;;
+;;;; ## Example Usage
+;;;;
+;;;; *(assuming `src2md` has been made executable)*
+;;;;
+;;;; * to see the generated Markdown: `./src2md src2md`
+;;;; * to see the generated HTML: `./src2md src2md | markdown > src2md.html`
+;;;;
+;;;; ## Bugs / Problems
+;;;;
+;;;; * Common Lisp: duplication of docstrings and comment documentation.
+;;;;
+;;;; ## Changelog
+;;;;
+;;;; v0.4: Added more comment tags and changed name from `cl2md` to `src2md`. *(2010-03-19)*  
+;;;; v0.3: Some minor documentation changes. *(2010-03-18)*  
+;;;; v0.2: Source code blocks are now in a different colour (\*code-colour\*). *(2010-03-18)*  
+;;;; v0.1: Initial version. *(2010-03-17)*
+
+
+;;; ## Parameters
+
+(defparameter *code-colour* "#4f0000")
+
+;; If a line starts with one of these it will treated as a comment (order is
+;; important here because of `(length tag)` in `commentp`!):
+(defparameter *comment-tags* '("# " "#" "// " "//"
+                               ";;;; " ";;; " ";; " ";;;;" ";;;" ";;"))
+
+;; If a line starts with one of these it will **not** be output:
+(defparameter *ignore-tags* '("#!" "#- " "#-" "//- " "//-"
+                              ";;;;- " ";;;- " ";;- " ";;;;-" ";;;-" ";;-"))
+
+
+;;; ## Common Functions
+
+;; This function is from [On Lisp](http://www.paulgraham.com/onlisp.html) by
+;; Paul Graham:
+(defun mkstr (&rest args)
+  (with-output-to-string (s)
+    (dolist (a args) (princ a s))))
+
+
+(defun starts-with (sequence subsequence)
+  "Returns T if SEQUENCE starts with SUBSEQUENCE otherwise returns NIL."
+  (let ((sublen (length subsequence)))
+    (when (and (> sublen 0)
+               (<= sublen (length sequence)))
+      (equal (subseq sequence 0 sublen) subsequence))))
+
+
+;;; ## Functions
+
+;; ### commentp
+;;
+;; Returns either nil or the comment line with the comment characters (as
+;; listed in `tags` / `*comment-tags*`) stripped away in front of it.
+(defun commentp (string &optional (tags *comment-tags*))
+  "If STRING starts with any of the items in TAGS a substring of STRING is
+  returned that has the TAG it matched on chopped off.
+  If there are no matches NIL is returned."
+  (loop for tag in tags
+        when (starts-with string tag)
+          do (return-from commentp (subseq string (length tag)))))
+
+
+;;; ### ignorep & print-usage
+;;;
+;;; These two functions speak for themselves:
+
+(defun ignorep (string &optional (tags *ignore-tags*))
+  (loop for tag in tags
+        when (starts-with string tag)
+          do (return-from ignorep t)))
+
+
+(defun print-usage ()
+  (format t "usage: src2md file
+       Converts \"file\" to a format that can be parsed by the markdown-command
+       and prints it to standard output.~%"))
+
+
+;; ### process-file
+;;
+;; This is where most of the functionality resides.
+;;
+;; `line` is set to a line from input and it is run through the `commentp`
+;; function. Then:
+;;
+;; * If `(ignorep line)` returns true the line is ignored;
+;; * else if `commentp` contains a comment line it is either added to `markup`
+;;   if `markup` already contains text otherwise `markup` is set `commentp`;
+;; * else if `commentp` is `nil` and there is text in `markup` then that text
+;;   is output first and then whatever is in `line` is printed to output;
+;; * otherwise just `line` is output.
+;;
+;; Normal lines which aren't comments (so actual code) are output with four
+;; spaces in front of them so Markdown will treat them as code.
+(defun process-file (file)
+  (with-open-file (f file)
+    (format t "<font color=\"~A\">" *code-colour*)
+    (loop with markup = nil
+          for line = (read-line f nil nil)
+          for commentp = (commentp line)
+          while line
+          do (cond ;; line that needs to be ignored
+                   ((ignorep line))
+                   ;; comment line
+                   (commentp
+                    (setf markup (if (null markup)
+                                     (format nil "~A~%" commentp)
+                                     (mkstr markup
+                                            (format nil "~A~%" commentp)))))
+                   ;; no comment line but markup has text waiting
+                   ((and markup (not commentp))
+                    (format t "</font>~%~A<font color=\"~A\">~%    ~A~%"
+                            markup *code-colour* line)
+                    (setf markup nil))
+                   ;; otherwise just print the line
+                   (t
+                    (format t "    ~A~%" line)))
+          finally (when markup
+                    (format t "</font>~%~A" markup)))))
+
+
+;;; ## Main Program
+;;;
+;;; Very basic check for arguments.  If there are none help text will be
+;;; printed and if there are arguments then the first one is passed on to the
+;;; `process-file` function.
+;;;
+;;; This should ofcourse be improved and extended bit it suffices for now.
+
+(cond ((null *args*) (print-usage))
+      (t (process-file (first *args*))))
+
+
+;;;; ## License
+;;;;
+;;;; The BSD License
+;;;;
+;;;; Copyright (c) 2010, Erik Winkels  
+;;;; All rights reserved.
+;;;;
+;;;; Redistribution and use in source and binary forms, with or without
+;;;; modification, are permitted provided that the following conditions are
+;;;; met:
+;;;;
+;;;;     * Redistributions of source code must retain the above copyright
+;;;;       notice, this list of conditions and the following disclaimer.
+;;;;
+;;;;     * Redistributions in binary form must reproduce the above
+;;;;       copyright notice, this list of conditions and the following
+;;;;       disclaimer in the documentation and/or other materials provided
+;;;;       with the distribution.
+;;;;
+;;;;     * The name of its contributor may not be used to endorse or
+;;;;       promote products derived from this software without specific
+;;;;       prior written permission.
+;;;;
+;;;; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+;;;; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+;;;; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+;;;; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+;;;; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+;;;; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+;;;; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+;;;; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+;;;; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+;;;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+;;;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
