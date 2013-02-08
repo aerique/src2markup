@@ -1,4 +1,3 @@
-<font color="#4f0000"></font>
 # src2md
 
  author: Erik Winkels (<aerique@xs4all.nl>)  
@@ -39,64 +38,54 @@ people (not me).
 
 ## Changelog
 
+v0.5: Fixed some code getting appended to text. Removed coloring of code for now. *(2013-02-08)*  
 v0.4: Added more comment tags and changed name from `cl2md` to `src2md`. *(2010-03-19)*  
 v0.3: Some minor documentation changes. *(2010-03-18)*  
 v0.2: Source code blocks are now in a different colour (\*code-colour\*). *(2010-03-18)*  
 v0.1: Initial version. *(2010-03-17)*
-<font color="#4f0000">
-    
-    
-</font>
+
+
 ## Parameters
-<font color="#4f0000">
-    
-    (defparameter *code-colour* "#4f0000")
-    
-</font>
+
+    (defparameter *code-colour* "#6f0f00")
+
 If a line starts with one of these it will treated as a comment (order is
 important here because of `(length tag)` in `commentp`!):
-<font color="#4f0000">
-    (defparameter *comment-tags* '("# " "#" "// " "//"
+
+    (defparameter *comment-tags* '("# " "#" "// " "//" "/* " "/*" "*/"
                                    ";;;; " ";;; " ";; " ";;;;" ";;;" ";;"))
-    
-</font>
+
 If a line starts with one of these it will **not** be output:
-<font color="#4f0000">
-    (defparameter *ignore-tags* '("#!" "#- " "#-" "//- " "//-"
+
+    (defparameter *ignore-tags* '("#!" "#- " "#-" "//- " "//-" "/*- " "/*-"
                                   ";;;;- " ";;;- " ";;- " ";;;;-" ";;;-" ";;-"))
-    
-    
-</font>
+
+
 ## Common Functions
-<font color="#4f0000">
-    
-</font>
+
 This function is from [On Lisp](http://www.paulgraham.com/onlisp.html) by
 Paul Graham:
-<font color="#4f0000">
+
     (defun mkstr (&rest args)
       (with-output-to-string (s)
         (dolist (a args) (princ a s))))
-    
-    
+
+
     (defun starts-with (sequence subsequence)
       "Returns T if SEQUENCE starts with SUBSEQUENCE otherwise returns NIL."
       (let ((sublen (length subsequence)))
         (when (and (> sublen 0)
                    (<= sublen (length sequence)))
           (equal (subseq sequence 0 sublen) subsequence))))
-    
-    
-</font>
+
+
 ## Functions
-<font color="#4f0000">
-    
-</font>
+
 ### commentp
 
 Returns either nil or the comment line with the comment characters (as
 listed in `tags` / `*comment-tags*`) stripped away in front of it.
-<font color="#4f0000">
+
     (defun commentp (string &optional (tags *comment-tags*))
       "If STRING starts with any of the items in TAGS a substring of STRING is
       returned that has the TAG it matched on chopped off.
@@ -104,27 +93,24 @@ listed in `tags` / `*comment-tags*`) stripped away in front of it.
       (loop for tag in tags
             when (starts-with string tag)
               do (return-from commentp (subseq string (length tag)))))
-    
-    
-</font>
+
+
 ### ignorep & print-usage
 
 These two functions speak for themselves:
-<font color="#4f0000">
-    
+
     (defun ignorep (string &optional (tags *ignore-tags*))
       (loop for tag in tags
             when (starts-with string tag)
               do (return-from ignorep t)))
-    
-    
+
+
     (defun print-usage ()
       (format t "usage: src2md file
            Converts \"file\" to a format that can be parsed by the markdown-command
            and prints it to standard output.~%"))
-    
-    
-</font>
+
+
 ### process-file
 
 This is where most of the functionality resides.
@@ -133,43 +119,35 @@ This is where most of the functionality resides.
 function. Then:
 
 * If `(ignorep line)` returns true the line is ignored;
-* else if `commentp` contains a comment line it is either added to `markup`
-  if `markup` already contains text otherwise `markup` is set `commentp`;
-* else if `commentp` is `nil` and there is text in `markup` then that text
-  is output first and then whatever is in `line` is printed to output;
+* else if `commentp` contains a comment line it is printed with the comment
+  characters stripped away;
 * otherwise just `line` is output.
 
 Normal lines which aren't comments (so actual code) are output with four
 spaces in front of them so Markdown will treat them as code.
-<font color="#4f0000">
+
     (defun process-file (file)
       (with-open-file (f file)
-        (format t "<font color=\"~A\">" *code-colour*)
-        (loop with markup = nil
-              for line = (read-line f nil nil)
+        (loop with last-line-comment = t
+    		  for line = (read-line f nil nil)
               for commentp = (commentp line)
               while line
               do (cond ;; line that needs to be ignored
                        ((ignorep line))
                        ;; comment line
                        (commentp
-                        (setf markup (if (null markup)
-                                         (format nil "~A~%" commentp)
-                                         (mkstr markup
-                                                (format nil "~A~%" commentp)))))
-                       ;; no comment line but markup has text waiting
-                       ((and markup (not commentp))
-                        (format t "</font>~%~A<font color=\"~A\">~%    ~A~%"
-                                markup *code-colour* line)
-                        (setf markup nil))
-                       ;; otherwise just print the line
-                       (t
-                        (format t "    ~A~%" line)))
-              finally (when markup
-                        (format t "</font>~%~A" markup)))))
-    
-    
-</font>
+    					(setf last-line-comment t)
+    					(format t "~A~%" commentp))
+    				   (t
+    					(when (and last-line-comment
+    							   (> (length line) 0))
+    					  (terpri))
+    					(setf last-line-comment nil)
+    					(if (> (length line) 0)
+    						(format t "    ~A~%" line)
+    						(terpri)))))))
+
+
 ## Main Program
 
 Very basic check for arguments.  If there are none help text will be
@@ -177,13 +155,11 @@ printed and if there are arguments then the first one is passed on to the
 `process-file` function.
 
 This should ofcourse be improved and extended bit it suffices for now.
-<font color="#4f0000">
-    
+
     (cond ((null *args*) (print-usage))
           (t (process-file (first *args*))))
-    
-    
-</font>
+
+
 ## License
 
 The BSD License
