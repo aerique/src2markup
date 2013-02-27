@@ -2,7 +2,7 @@
 
  author: Erik Winkels (<aerique@xs4all.nl>)  
 created: 2010-03-17  
-version: 0.4 (2010-03-19)  
+version: 0.6 (2013-02-27)  
 license: BSD, see the end of this file
 
 ## Introduction
@@ -34,16 +34,20 @@ people (not me).
 
 ## Bugs / Problems
 
-* Common Lisp: duplication of docstrings and comment documentation.
+* Common Lisp: duplication of docstrings and comment documentation;
+* Markdown: When you end your comment with a list the code that follows
+            the comment will not be formatted as code, IMHO this is a bug
+            in the standard Markdown
+            (https://daringfireball.net/projects/markdown/).
 
 ## Changelog
 
+v0.6: Put code in div with background color. *(2013-02-27)*  
 v0.5: Fixed some code getting appended to text. Removed coloring of code for now. *(2013-02-08)*  
 v0.4: Added more comment tags and changed name from `cl2md` to `src2md`. *(2010-03-19)*  
 v0.3: Some minor documentation changes. *(2010-03-18)*  
 v0.2: Source code blocks are now in a different colour (\*code-colour\*). *(2010-03-18)*  
 v0.1: Initial version. *(2010-03-17)*
-
 
 ## Parameters
 
@@ -59,7 +63,6 @@ If a line starts with one of these it will **not** be output:
 
     (defparameter *ignore-tags* '("#!" "#- " "#-" "//- " "//-" "/*- " "/*-"
                                   ";;;;- " ";;;- " ";;- " ";;;;-" ";;;-" ";;-"))
-
 
 ## Common Functions
 
@@ -78,7 +81,6 @@ Paul Graham:
                    (<= sublen (length sequence)))
           (equal (subseq sequence 0 sublen) subsequence))))
 
-
 ## Functions
 
 ### commentp
@@ -94,7 +96,6 @@ listed in `tags` / `*comment-tags*`) stripped away in front of it.
             when (starts-with string tag)
               do (return-from commentp (subseq string (length tag)))))
 
-
 ### ignorep & print-usage
 
 These two functions speak for themselves:
@@ -109,7 +110,6 @@ These two functions speak for themselves:
       (format t "usage: src2md file
            Converts \"file\" to a format that can be parsed by the markdown-command
            and prints it to standard output.~%"))
-
 
 ### process-file
 
@@ -129,24 +129,28 @@ spaces in front of them so Markdown will treat them as code.
     (defun process-file (file)
       (with-open-file (f file)
         (loop with last-line-comment = t
-    		  for line = (read-line f nil nil)
+              for line = (read-line f nil nil)
               for commentp = (commentp line)
               while line
               do (cond ;; line that needs to be ignored
                        ((ignorep line))
+                       ;; empty line
+                       ((= 0 (length line))
+                        (terpri))
                        ;; comment line
                        (commentp
-    					(setf last-line-comment t)
-    					(format t "~A~%" commentp))
-    				   (t
-    					(when (and last-line-comment
-    							   (> (length line) 0))
-    					  (terpri))
-    					(setf last-line-comment nil)
-    					(if (> (length line) 0)
-    						(format t "    ~A~%" line)
-    						(terpri)))))))
-
+                        (when (not last-line-comment)
+                          (format t "</div>~%")
+                          (terpri))
+                        (setf last-line-comment t)
+                        (format t "~A~%" commentp))
+                       (t
+                        (when (and last-line-comment
+                                   (> (length line) 0))
+                          (format t "   <div style=\"background-color: #efefef; margin: 16pt; padding: 4pt\">~%" *code-colour*)
+                          (terpri))
+                        (setf last-line-comment nil)
+                        (format t "    ~A~%" line))))))
 
 ## Main Program
 
@@ -158,7 +162,6 @@ This should ofcourse be improved and extended bit it suffices for now.
 
     (cond ((null *args*) (print-usage))
           (t (process-file (first *args*))))
-
 
 ## License
 
