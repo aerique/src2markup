@@ -6,7 +6,7 @@ version: 0.7 (2018-10-16)
 license: BSD, see the end of this file
 
 The canonical home page for this project is:
-https://git.sr.ht/~aerique/hello-dns-common-lisp
+https://git.sr.ht/~aerique/src2markup
 
 (The library is also pushed to GitLab and GitHub but those sites are not
 monitored for support.)
