@@ -5,14 +5,31 @@
 ;;;;
 ;;;;  author: Erik Winkels (<aerique@xs4all.nl>)  
 ;;;; created: 2010-03-17  
-;;;; version: 0.6 (2013-02-27)  
+;;;; version: 0.7 (2018-10-16)  
 ;;;; license: BSD, see the end of this file
+;;;;
+;;;; The canonical home page for this project is:
+;;;; https://git.sr.ht/~aerique/hello-dns-common-lisp
+;;;;
+;;;; (The library is also pushed to GitLab and GitHub but those sites are not
+;;;; monitored for support.)
 ;;;;
 ;;;; ## Introduction
 ;;;;
 ;;;; `src2md` converts a source code file to a file parsable by
 ;;;; [Markdown](http://daringfireball.net/projects/markdown/).  This document
 ;;;; is an example of a source code file converted by `src2md`.
+;;;;
+;;;; The plan for this software is to do 'inverse' literate programming.
+;;;; Normal literate programming has its own format that needs to be run
+;;;; through a tool to get compilable source code.  `src2md` starts from the
+;;;; idea that one always has valid source code and that one extracts the
+;;;; documentation from that.
+;;;;
+;;;; Currently it works OK for single files but it needs to expand to be able
+;;;; to compose nice docs from multiple source files with some directives.
+;;;;
+;;;; ### History
 ;;;;
 ;;;; I have used [pbook.el](http://discontinuity.info/~pkhuong/pbook.el) in the
 ;;;; past and really like that approach to documenting code but it offered
@@ -26,7 +43,7 @@
 ;;;;
 ;;;; ## Download
 ;;;;
-;;;; <http://www.aerique.net/software/src2md/src2md.txt>
+;;;; <https://git.sr.ht/~aerique/src2markup/blob/master/src2md.lisp>
 ;;;;
 ;;;; ## Example Usage
 ;;;;
@@ -45,6 +62,7 @@
 ;;;;
 ;;;; ## Changelog
 ;;;;
+;;;; v0.7: Update download URL. *(2018-10-16)*  
 ;;;; v0.6: Put code in div with background color. *(2013-02-27)*  
 ;;;; v0.5: Fixed some code getting appended to text. Removed coloring of code for now. *(2013-02-08)*  
 ;;;; v0.4: Added more comment tags and changed name from `cl2md` to `src2md`. *(2010-03-19)*  

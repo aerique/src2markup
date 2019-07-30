@@ -2,14 +2,31 @@
 
  author: Erik Winkels (<aerique@xs4all.nl>)  
 created: 2010-03-17  
-version: 0.6 (2013-02-27)  
+version: 0.7 (2018-10-16)  
 license: BSD, see the end of this file
+
+The canonical home page for this project is:
+https://git.sr.ht/~aerique/hello-dns-common-lisp
+
+(The library is also pushed to GitLab and GitHub but those sites are not
+monitored for support.)
 
 ## Introduction
 
 `src2md` converts a source code file to a file parsable by
 [Markdown](http://daringfireball.net/projects/markdown/).  This document
 is an example of a source code file converted by `src2md`.
+
+The plan for this software is to do 'inverse' literate programming.
+Normal literate programming has its own format that needs to be run
+through a tool to get compilable source code.  `src2md` starts from the
+idea that one always has valid source code and that one extracts the
+documentation from that.
+
+Currently it works OK for single files but it needs to expand to be able
+to compose nice docs from multiple source files with some directives.
+
+### History
 
 I have used [pbook.el](http://discontinuity.info/~pkhuong/pbook.el) in the
 past and really like that approach to documenting code but it offered
@@ -23,7 +40,7 @@ people (not me).
 
 ## Download
 
-<http://www.aerique.net/software/src2md/src2md.txt>
+<https://git.sr.ht/~aerique/src2markup/blob/master/src2md.lisp>
 
 ## Example Usage
 
@@ -42,6 +59,7 @@ people (not me).
 
 ## Changelog
 
+v0.7: Update download URL. *(2018-10-16)*  
 v0.6: Put code in div with background color. *(2013-02-27)*  
 v0.5: Fixed some code getting appended to text. Removed coloring of code for now. *(2013-02-08)*  
 v0.4: Added more comment tags and changed name from `cl2md` to `src2md`. *(2010-03-19)*  
@@ -49,25 +67,38 @@ v0.3: Some minor documentation changes. *(2010-03-18)*
 v0.2: Source code blocks are now in a different colour (\*code-colour\*). *(2010-03-18)*  
 v0.1: Initial version. *(2010-03-17)*
 
+
 ## Parameters
+
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
 
     (defparameter *code-colour* "#6f0f00")
 
+</div>
+
 If a line starts with one of these it will treated as a comment (order is
 important here because of `(length tag)` in `commentp`!):
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
 
     (defparameter *comment-tags* '("# " "#" "// " "//" "/* " "/*" "*/"
                                    ";;;; " ";;; " ";; " ";;;;" ";;;" ";;"))
 
+</div>
+
 If a line starts with one of these it will **not** be output:
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
 
     (defparameter *ignore-tags* '("#!" "#- " "#-" "//- " "//-" "/*- " "/*-"
                                   ";;;;- " ";;;- " ";;- " ";;;;-" ";;;-" ";;-"))
+
+
+</div>
 
 ## Common Functions
 
 This function is from [On Lisp](http://www.paulgraham.com/onlisp.html) by
 Paul Graham:
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
 
     (defun mkstr (&rest args)
       (with-output-to-string (s)
@@ -81,12 +112,16 @@ Paul Graham:
                    (<= sublen (length sequence)))
           (equal (subseq sequence 0 sublen) subsequence))))
 
+
+</div>
+
 ## Functions
 
 ### commentp
 
 Returns either nil or the comment line with the comment characters (as
 listed in `tags` / `*comment-tags*`) stripped away in front of it.
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
 
     (defun commentp (string &optional (tags *comment-tags*))
       "If STRING starts with any of the items in TAGS a substring of STRING is
@@ -96,9 +131,14 @@ listed in `tags` / `*comment-tags*`) stripped away in front of it.
             when (starts-with string tag)
               do (return-from commentp (subseq string (length tag)))))
 
+
+</div>
+
 ### ignorep & print-usage
 
 These two functions speak for themselves:
+
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
 
     (defun ignorep (string &optional (tags *ignore-tags*))
       (loop for tag in tags
@@ -110,6 +150,9 @@ These two functions speak for themselves:
       (format t "usage: src2md file
            Converts \"file\" to a format that can be parsed by the markdown-command
            and prints it to standard output.~%"))
+
+
+</div>
 
 ### process-file
 
@@ -125,6 +168,7 @@ function. Then:
 
 Normal lines which aren't comments (so actual code) are output with four
 spaces in front of them so Markdown will treat them as code.
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
 
     (defun process-file (file)
       (with-open-file (f file)
@@ -152,6 +196,9 @@ spaces in front of them so Markdown will treat them as code.
                         (setf last-line-comment nil)
                         (format t "    ~A~%" line))))))
 
+
+</div>
+
 ## Main Program
 
 Very basic check for arguments.  If there are none help text will be
@@ -160,8 +207,13 @@ printed and if there are arguments then the first one is passed on to the
 
 This should ofcourse be improved and extended bit it suffices for now.
 
+   <div style="background-color: #efefef; margin: 16pt; padding: 4pt">
+
     (cond ((null *args*) (print-usage))
           (t (process-file (first *args*))))
+
+
+</div>
 
 ## License
 
